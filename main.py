@@ -2,7 +2,7 @@ import os
 from google.cloud import tasks_v2
 import json
 import functions_framework
-from basicauth import decode
+from basicauth import decode, encode
 import time
 from google.api_core.exceptions import GoogleAPIError
 
@@ -37,6 +37,15 @@ def create_task(request):
     if not project or not queue or not location or not url:
         return "Environment variables are not set correctly", 500
 
+    # Encode the Basic Auth credentials
+    if basic_user and basic_password:
+        encoded_credentials = encode(basic_user, basic_password)
+        if encoded_credentials.startswith("Basic "):
+            encoded_credentials = encoded_credentials[6:]  # Remove the "Basic " prefix
+        auth_header_value = f"Basic {encoded_credentials}"
+    else:
+        auth_header_value = None
+
     # Cloud Tasks client
     client = tasks_v2.CloudTasksClient()
     parent = client.queue_path(project, location, queue)
@@ -50,6 +59,10 @@ def create_task(request):
             "body": json.dumps(payload).encode(),
         }
     }
+
+    # Add the Authorization header if credentials are provided
+    if auth_header_value:
+        task["http_request"]["headers"]["Authorization"] = auth_header_value
 
     # Attempt to create the task with retries
     for attempt in range(3):  # Retry up to 3 times

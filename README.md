@@ -2,6 +2,10 @@
 
 For creating a task from an HTTP call, to another Google Function that actually does processing.
 
+## Requirements
+
+- The associated Google Service account has permission to enqueue tasks to target Google Task Queue.
+
 ## Local Running
 
 GCP_PROJECT= \
